@@ -21,11 +21,14 @@ TEMPLATES_DIR = BASE_DIR / "frontend" / "templates"
 # Lifespan for initializing DB and seeding data
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Create tables if not exist
-    Base.metadata.create_all(bind=engine)
-    # Seed initial fashion catalog
-    with Session(engine) as db:
-        seed_initial_data(db)
+    # Try to initialize schema and seed if writable
+    try:
+        Base.metadata.create_all(bind=engine)
+        with Session(engine) as db:
+            seed_initial_data(db)
+    except Exception as exc:
+        import logging
+        logging.getLogger("fashion_store").warning(f"Startup DB init skipped: {exc}")
     yield
 
 app = FastAPI(

@@ -9,15 +9,15 @@ logger = logging.getLogger("fashion_store")
 logging.basicConfig(level=logging.INFO)
 
 connect_args = {
-    "connect_timeout": 25,
-    "read_timeout": 30,
-    "write_timeout": 30
+    "connect_timeout": 4,
+    "read_timeout": 5,
+    "write_timeout": 5
 }
 engine = None
 ACTIVE_DB_TYPE = "unknown"
 
 # Try connecting to configured primary database (MySQL)
-if "mysql" in settings.DATABASE_URL.lower():
+if settings.DATABASE_URL and "mysql" in settings.DATABASE_URL.lower():
     try:
         ssl_ctx = ssl.create_default_context()
         ssl_ctx.check_hostname = False
@@ -27,13 +27,13 @@ if "mysql" in settings.DATABASE_URL.lower():
         candidate_engine = create_engine(
             settings.DATABASE_URL,
             connect_args=connect_args,
-            pool_size=10,
-            max_overflow=20,
+            pool_size=5,
+            max_overflow=10,
             pool_pre_ping=True,
             pool_recycle=280,
-            pool_timeout=15,
+            pool_timeout=5,
         )
-        # Test connection
+        # Test connection quickly
         with candidate_engine.connect() as conn:
             conn.execute(text("SELECT 1"))
         engine = candidate_engine
@@ -47,7 +47,9 @@ if "mysql" in settings.DATABASE_URL.lower():
 
 # If MySQL could not connect, fallback to SQLite
 if engine is None:
-    fallback_url = "sqlite:///./fashion_store.db"
+    from pathlib import Path
+    db_file = Path(__file__).resolve().parent.parent.parent.parent / "fashion_store.db"
+    fallback_url = f"sqlite:///{db_file.as_posix()}"
     engine = create_engine(
         fallback_url,
         connect_args={"check_same_thread": False}

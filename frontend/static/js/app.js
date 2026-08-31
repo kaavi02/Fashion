@@ -11,20 +11,35 @@ function updateNavUser() {
   if (!userNavContainer) return;
 
   if (user) {
+    const adminBadge = user.is_admin ? `
+      <a href="/admin" class="btn btn-warning text-dark rounded-pill px-3 py-2 fw-bold d-inline-flex align-items-center gap-1 me-2 shadow-sm" style="font-size: 0.8rem; letter-spacing: 0.05em;">
+        <i class="bi bi-shield-lock-fill"></i> Admin Console
+      </a>
+    ` : '';
+
+    const adminDropdownItem = user.is_admin ? `
+      <li><a class="dropdown-item fw-bold text-warning" href="/admin"><i class="bi bi-speedometer2 me-2"></i>Admin Studio</a></li>
+      <li><hr class="dropdown-divider"></li>
+    ` : '';
+
     userNavContainer.innerHTML = `
-      <div class="dropdown">
-        <button class="btn btn-outline-light rounded-pill px-3 py-2 dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" style="font-size: 0.82rem;">
-          <i class="bi bi-person-circle"></i>
-          <span>${user.full_name.split(' ')[0]}</span>
-        </button>
-        <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-          <li><h6 class="dropdown-header">${user.email}</h6></li>
-          <li><a class="dropdown-item" href="/profile"><i class="bi bi-person me-2"></i>My Profile & AI Sizes</a></li>
-          <li><a class="dropdown-item" href="/orders"><i class="bi bi-box-seam me-2"></i>My Orders</a></li>
-          <li><a class="dropdown-item" href="/wishlist"><i class="bi bi-heart me-2"></i>Wishlist</a></li>
-          <li><hr class="dropdown-divider"></li>
-          <li><button class="dropdown-item text-danger" onclick="logoutUser()"><i class="bi bi-box-arrow-right me-2"></i>Sign Out</button></li>
-        </ul>
+      <div class="d-flex align-items-center">
+        ${adminBadge}
+        <div class="dropdown">
+          <button class="btn btn-outline-light rounded-pill px-3 py-2 dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" style="font-size: 0.82rem;">
+            <i class="bi bi-person-circle"></i>
+            <span>${user.full_name.split(' ')[0]}</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+            <li><h6 class="dropdown-header">${user.email}</h6></li>
+            ${adminDropdownItem}
+            <li><a class="dropdown-item" href="/profile"><i class="bi bi-person me-2"></i>My Profile & AI Sizes</a></li>
+            <li><a class="dropdown-item" href="/orders"><i class="bi bi-box-seam me-2"></i>My Orders</a></li>
+            <li><a class="dropdown-item" href="/wishlist"><i class="bi bi-heart me-2"></i>Wishlist</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><button class="dropdown-item text-danger" onclick="logoutUser()"><i class="bi bi-box-arrow-right me-2"></i>Sign Out</button></li>
+          </ul>
+        </div>
       </div>
     `;
   } else {

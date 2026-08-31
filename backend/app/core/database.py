@@ -1,5 +1,7 @@
 import logging
 import ssl
+import os
+import shutil
 from typing import Generator
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
@@ -47,9 +49,27 @@ if settings.DATABASE_URL and "mysql" in settings.DATABASE_URL.lower():
 
 # If MySQL could not connect, fallback to SQLite
 if engine is None:
+    import shutil
     from pathlib import Path
-    db_file = Path(__file__).resolve().parent.parent.parent.parent / "fashion_store.db"
-    fallback_url = f"sqlite:///{db_file.as_posix()}"
+    
+    source_db = Path(__file__).resolve().parent.parent.parent.parent / "fashion_store.db"
+    
+    # On serverless platforms like Vercel, the source directory (/var/task) is read-only.
+    # The /tmp directory is the only writable storage. Copy DB to /tmp if available.
+    target_db = source_db
+    tmp_dir = Path("/tmp")
+    if tmp_dir.exists() and os.access(tmp_dir, os.W_OK):
+        tmp_db = tmp_dir / "fashion_store.db"
+        if not tmp_db.exists() and source_db.exists():
+            try:
+                shutil.copy2(source_db, tmp_db)
+                logger.info("Copied database to writable /tmp storage: %s", tmp_db)
+            except Exception as copy_err:
+                logger.warning("Failed to copy database to /tmp: %s", copy_err)
+        if tmp_db.exists():
+            target_db = tmp_db
+
+    fallback_url = f"sqlite:///{target_db.as_posix()}"
     engine = create_engine(
         fallback_url,
         connect_args={"check_same_thread": False}

@@ -1,0 +1,298 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4 px-lg-5" id="adminDashboardContainer">
+  
+  <!-- Header Ribbon -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-3 border-bottom gap-3">
+    <div>
+      <div class="d-flex align-items-center gap-2 mb-1">
+        <span class="badge bg-warning text-dark fw-bold px-2 py-1" style="letter-spacing: 0.08em; font-size: 0.72rem;">ADMIN CONSOLE</span>
+        <h1 class="font-serif fw-bold h3 mb-0 text-white">Vogue Fit Operations Studio</h1>
+      </div>
+      <p class="text-secondary small mb-0">Real-time revenue metrics, order fulfillment pipeline, and catalog control</p>
+    </div>
+    <div class="d-flex gap-2">
+      <button class="btn btn-stitch-primary px-3 py-2 fw-semibold d-inline-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#addProductModal" style="font-size: 0.84rem;">
+        <i class="bi bi-plus-lg"></i> Add New Product
+      </button>
+      <button class="btn btn-outline-light px-3 py-2 fw-semibold d-inline-flex align-items-center gap-2" onclick="loadAdminData()" style="font-size: 0.84rem;">
+        <i class="bi bi-arrow-clockwise"></i> Refresh
+      </button>
+    </div>
+  </div>
+
+  <!-- KPI Metrics Grid -->
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+      <div class="card border-0 p-3 rounded-3" style="background: var(--color-surface-low); border: 1px solid var(--color-outline-subtle) !important;">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <span class="text-secondary small fw-semibold text-uppercase" style="letter-spacing: 0.05em;">Gross Revenue</span>
+          <div class="rounded p-2 text-warning" style="background: rgba(212, 175, 55, 0.1);">
+            <i class="bi bi-currency-rupee fs-5"></i>
+          </div>
+        </div>
+        <h3 class="fw-bold mb-1 text-white" id="kpiRevenue">₹0</h3>
+        <span class="text-muted small">Lifetime fulfilled sales</span>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+      <div class="card border-0 p-3 rounded-3" style="background: var(--color-surface-low); border: 1px solid var(--color-outline-subtle) !important;">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <span class="text-secondary small fw-semibold text-uppercase" style="letter-spacing: 0.05em;">Total Orders</span>
+          <div class="rounded p-2 text-info" style="background: rgba(13, 202, 240, 0.1);">
+            <i class="bi bi-box-seam fs-5"></i>
+          </div>
+        </div>
+        <h3 class="fw-bold mb-1 text-white" id="kpiOrders">0</h3>
+        <span class="text-muted small" id="kpiOrdersPending">0 pending fulfillment</span>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+      <div class="card border-0 p-3 rounded-3" style="background: var(--color-surface-low); border: 1px solid var(--color-outline-subtle) !important;">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <span class="text-secondary small fw-semibold text-uppercase" style="letter-spacing: 0.05em;">Catalog Items</span>
+          <div class="rounded p-2 text-success" style="background: rgba(25, 135, 84, 0.1);">
+            <i class="bi bi-tags fs-5"></i>
+          </div>
+        </div>
+        <h3 class="fw-bold mb-1 text-white" id="kpiProducts">0</h3>
+        <span class="text-muted small">Active fashion pieces</span>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+      <div class="card border-0 p-3 rounded-3" style="background: var(--color-surface-low); border: 1px solid var(--color-outline-subtle) !important;">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <span class="text-secondary small fw-semibold text-uppercase" style="letter-spacing: 0.05em;">Low Stock Alerts</span>
+          <div class="rounded p-2 text-danger" style="background: rgba(220, 53, 69, 0.1);">
+            <i class="bi bi-exclamation-triangle fs-5"></i>
+          </div>
+        </div>
+        <h3 class="fw-bold mb-1 text-white" id="kpiLowStock">0</h3>
+        <span class="text-danger small fw-semibold">Variants requiring restock</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation Tabs -->
+  <ul class="nav nav-pills mb-4 gap-2" id="adminTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active px-4 py-2 fw-semibold rounded-pill" id="orders-tab" data-bs-toggle="tab" data-bs-target="#ordersTab" type="button" role="tab">
+        <i class="bi bi-bag-check me-2"></i>Orders Pipeline
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link px-4 py-2 fw-semibold rounded-pill" id="products-tab" data-bs-toggle="tab" data-bs-target="#productsTab" type="button" role="tab">
+        <i class="bi bi-grid me-2"></i>Products & Inventory
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link px-4 py-2 fw-semibold rounded-pill" id="users-tab" data-bs-toggle="tab" data-bs-target="#usersTab" type="button" role="tab">
+        <i class="bi bi-people me-2"></i>Customers
+      </button>
+    </li>
+  </ul>
+
+  <!-- Tab Content -->
+  <div class="tab-content" id="adminTabsContent">
+    
+    <!-- Orders Tab -->
+    <div class="tab-pane fade show active" id="ordersTab" role="tabpanel">
+      <div class="card border-0 p-3 rounded-3" style="background: var(--color-surface-low); border: 1px solid var(--color-outline-subtle) !important;">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="font-serif fw-bold text-white mb-0">Customer Orders</h5>
+          <span class="small text-secondary" id="orderCountBadge">Loading orders...</span>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-dark table-hover align-middle mb-0" style="background: transparent;">
+            <thead>
+              <tr class="text-secondary small text-uppercase" style="border-bottom: 1px solid var(--color-outline-subtle);">
+                <th>Order ID</th>
+                <th>Date</th>
+                <th>Customer</th>
+                <th>Items</th>
+                <th>Total</th>
+                <th>Payment</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="adminOrdersTableBody">
+              <tr>
+                <td colspan="8" class="text-center py-5 text-secondary">
+                  <div class="spinner-border spinner-border-sm me-2"></div> Loading orders...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Products & Inventory Tab -->
+    <div class="tab-pane fade" id="productsTab" role="tabpanel">
+      <div class="card border-0 p-3 rounded-3" style="background: var(--color-surface-low); border: 1px solid var(--color-outline-subtle) !important;">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="font-serif fw-bold text-white mb-0">Catalog & Stock Control</h5>
+          <span class="small text-secondary" id="productCountBadge">Loading catalog...</span>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-dark table-hover align-middle mb-0" style="background: transparent;">
+            <thead>
+              <tr class="text-secondary small text-uppercase" style="border-bottom: 1px solid var(--color-outline-subtle);">
+                <th>Product</th>
+                <th>Category</th>
+                <th>Brand</th>
+                <th>Price</th>
+                <th>Variants & Stock</th>
+                <th>Featured</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="adminProductsTableBody">
+              <tr>
+                <td colspan="7" class="text-center py-5 text-secondary">
+                  <div class="spinner-border spinner-border-sm me-2"></div> Loading catalog...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Customers Tab -->
+    <div class="tab-pane fade" id="usersTab" role="tabpanel">
+      <div class="card border-0 p-3 rounded-3" style="background: var(--color-surface-low); border: 1px solid var(--color-outline-subtle) !important;">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="font-serif fw-bold text-white mb-0">Registered Accounts</h5>
+          <span class="small text-secondary" id="userCountBadge">Loading accounts...</span>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-dark table-hover align-middle mb-0" style="background: transparent;">
+            <thead>
+              <tr class="text-secondary small text-uppercase" style="border-bottom: 1px solid var(--color-outline-subtle);">
+                <th>ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Location</th>
+                <th>Role</th>
+                <th>Joined</th>
+              </tr>
+            </thead>
+            <tbody id="adminUsersTableBody">
+              <tr>
+                <td colspan="7" class="text-center py-5 text-secondary">
+                  <div class="spinner-border spinner-border-sm me-2"></div> Loading users...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Modal: Add New Product -->
+<div class="modal fade" id="addProductModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content border-0 p-3" style="background: #18181c; border: 1px solid var(--color-outline-subtle) !important;">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title font-serif fw-bold text-white">Add New Catalog Product</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="newProductForm" onsubmit="handleCreateProduct(event)">
+        <div class="modal-body p-4">
+          <div class="row g-3">
+            <div class="col-md-8">
+              <label class="form-label small fw-semibold text-light">Product Name *</label>
+              <input type="text" class="form-control" id="npName" placeholder="e.g. Mulberry Silk Evening Wrap" required style="background: #232328; color: #fff; border-color: #383842;">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold text-light">Gender *</label>
+              <select class="form-select" id="npGender" style="background: #232328; color: #fff; border-color: #383842;">
+                <option value="Women">Women</option>
+                <option value="Men">Men</option>
+                <option value="Unisex">Unisex</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold text-light">Category *</label>
+              <select class="form-select" id="npCategory" style="background: #232328; color: #fff; border-color: #383842;">
+                <option value="1">Men's Apparel</option>
+                <option value="2" selected>Women's Collection</option>
+                <option value="3">Ethnic & Festive</option>
+                <option value="4">Footwear & Sneakers</option>
+                <option value="5">Accessories & Bags</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold text-light">Brand *</label>
+              <select class="form-select" id="npBrand" style="background: #232328; color: #fff; border-color: #383842;">
+                <option value="1">Zara</option>
+                <option value="2">Urban Vogue</option>
+                <option value="3">Nike Sportswear</option>
+                <option value="4" selected>Aura Luxe</option>
+                <option value="5">Levi's Heritage</option>
+                <option value="6">H&M Studio</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold text-light">Base Price (₹) *</label>
+              <input type="number" class="form-control" id="npBasePrice" placeholder="4990" required style="background: #232328; color: #fff; border-color: #383842;">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold text-light">Discounted Price (₹)</label>
+              <input type="number" class="form-control" id="npDiscountPrice" placeholder="3990 (Optional)" style="background: #232328; color: #fff; border-color: #383842;">
+            </div>
+            <div class="col-12">
+              <label class="form-label small fw-semibold text-light">Image URL *</label>
+              <input type="url" class="form-control" id="npImageUrl" placeholder="https://images.unsplash.com/photo-..." required style="background: #232328; color: #fff; border-color: #383842;">
+            </div>
+            <div class="col-12">
+              <label class="form-label small fw-semibold text-light">Description</label>
+              <textarea class="form-control" id="npDescription" rows="2" placeholder="Fine tailoring details, silhouette, and seasonal notes..." style="background: #232328; color: #fff; border-color: #383842;"></textarea>
+            </div>
+
+            <!-- Initial Variant Specs -->
+            <div class="col-12">
+              <h6 class="text-warning small fw-bold text-uppercase mt-2">Initial Variant Stock</h6>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small text-light">Size</label>
+              <input type="text" class="form-control" id="npSize" value="M" style="background: #232328; color: #fff; border-color: #383842;">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small text-light">Color Name</label>
+              <input type="text" class="form-control" id="npColorName" value="Midnight Black" style="background: #232328; color: #fff; border-color: #383842;">
+            </div>
+            <div class="col-md-2">
+              <label class="form-label small text-light">Color Hex</label>
+              <input type="color" class="form-control form-control-color w-100" id="npColorHex" value="#111111" style="background: #232328; border-color: #383842;">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small text-light">Stock Qty</label>
+              <input type="number" class="form-control" id="npStock" value="15" style="background: #232328; color: #fff; border-color: #383842;">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-0">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-stitch-primary px-4 fw-bold" id="btnSubmitProduct">Save & Publish</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="/static/js/admin.js"></script>
+{% endblock %}

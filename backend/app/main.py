@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from backend.app.core.config import settings
 from backend.app.core.database import engine, Base, get_db, ACTIVE_DB_TYPE
 from backend.app.services.seed_data import seed_initial_data
-from backend.app.api import auth, products, cart, orders, wishlist, size_advisor
+from backend.app.api import auth, products, cart, orders, wishlist, size_advisor, admin
 from backend.app.models.models import Category, Brand, Product
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -63,6 +63,16 @@ app.include_router(cart.router, prefix=settings.API_V1_STR)
 app.include_router(orders.router, prefix=settings.API_V1_STR)
 app.include_router(wishlist.router, prefix=settings.API_V1_STR)
 app.include_router(size_advisor.router, prefix=settings.API_V1_STR)
+app.include_router(admin.router, prefix=settings.API_V1_STR)
+
+@app.get("/admin", response_class=HTMLResponse)
+def page_admin(request: Request):
+    """Luxury Admin Management Dashboard."""
+    return templates.TemplateResponse(
+        request=request,
+        name="admin.html",
+        context={"title": "Admin Dashboard"}
+    )
 
 @app.get("/favicon.ico", include_in_schema=False)
 def favicon():

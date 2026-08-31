@@ -1,0 +1,330 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4" id="productDetailContainer" data-product-id="{{ product.id }}" data-category-name="{{ product.category.name }}">
+  
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb small">
+      <li class="breadcrumb-item"><a href="/" class="text-muted text-decoration-none">Home</a></li>
+      <li class="breadcrumb-item"><a href="/products" class="text-muted text-decoration-none">Collections</a></li>
+      <li class="breadcrumb-item"><a href="/products?category={{ product.category.slug }}" class="text-muted text-decoration-none">{{ product.category.name }}</a></li>
+      <li class="breadcrumb-item active" aria-current="page">{{ product.name }}</li>
+    </ol>
+  </nav>
+
+  <div class="row g-5">
+    <!-- Gallery Column -->
+    <div class="col-lg-6">
+      <div class="gallery-main">
+        <img id="mainGalleryImage" class="img-fluid w-100" src="{{ product.image_url }}" alt="{{ product.name }}">
+      </div>
+      
+      <!-- Thumbnail Strip -->
+      <div class="gallery-thumbs">
+        <div class="thumb-item active" onclick="swapGalleryImage('{{ product.image_url }}', this)">
+          <img src="{{ product.image_url }}" alt="Thumb 1">
+        </div>
+        {% for img in product.additional_images %}
+        <div class="thumb-item" onclick="swapGalleryImage('{{ img }}', this)">
+          <img src="{{ img }}" alt="Thumb {{ loop.index + 1 }}">
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Product Purchasing Info Column -->
+    <div class="col-lg-6">
+      <div class="ps-lg-3">
+        <!-- Brand & Title -->
+        <span class="text-uppercase text-muted fw-bold small tracking-wider mb-1 d-block">{{ product.brand.name }}</span>
+        <h1 class="font-serif fw-bold h2 mb-2">{{ product.name }}</h1>
+
+        <!-- Rating & Reviews -->
+        <div class="d-flex align-items-center gap-2 mb-3">
+          <div class="text-warning small">
+            <i class="bi bi-star-fill"></i>
+            <i class="bi bi-star-fill"></i>
+            <i class="bi bi-star-fill"></i>
+            <i class="bi bi-star-fill"></i>
+            <i class="bi bi-star-half"></i>
+          </div>
+          <span class="small fw-semibold">{{ product.rating }}</span>
+          <span class="text-muted small">({{ product.reviews_count }} verified reviews)</span>
+        </div>
+
+        <!-- Pricing -->
+        <div class="d-flex align-items-baseline gap-3 mb-4 pb-3 border-bottom">
+          <span class="h3 fw-bold mb-0">₹{{ "{:,.0f}".format(product.current_price) }}</span>
+          {% if product.discount_price and product.discount_price < product.base_price %}
+          <span class="h5 text-muted text-decoration-line-through mb-0">₹{{ "{:,.0f}".format(product.base_price) }}</span>
+          <span class="badge bg-danger rounded-pill px-2 py-1 small">Save {{ product.discount_percent }}%</span>
+          {% endif %}
+          <span class="text-muted small ms-auto">Inclusive of all taxes</span>
+        </div>
+
+        <!-- AI Quick Size Advice Banner (Dynamic) -->
+        <div id="quickSizeAdviceBanner" class="d-none"></div>
+
+        <!-- Color Selector -->
+        <div class="mb-4">
+          <div class="selector-label">
+            <span>Selected Color: <strong id="activeColorName">{{ product.variants[0].color_name }}</strong></span>
+          </div>
+          <div class="color-picker-group">
+            {% set seen_colors = [] %}
+            {% for v in product.variants %}
+              {% if v.color_name not in seen_colors %}
+                {% set _ = seen_colors.append(v.color_name) %}
+                <button type="button" 
+                  class="color-picker-btn {% if loop.first %}active{% endif %}" 
+                  style="background-color: {{ v.color_hex }};"
+                  data-color="{{ v.color_name }}"
+                  data-hex="{{ v.color_hex }}"
+                  title="{{ v.color_name }}"
+                  onclick="selectColor('{{ v.color_name }}', this)">
+                </button>
+              {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Size Selector & AI Trigger -->
+        <div class="mb-4">
+        <!-- Size Selector & AI Trigger -->
+        <div class="mb-4">
+          <div class="selector-label">
+            <span>Selected Size: <strong id="activeSizeName">{{ product.variants[0].size }}</strong></span>
+            <button type="button" class="btn btn-link fw-bold p-0 text-decoration-none d-inline-flex align-items-center gap-1" style="color: var(--color-ai-accent);" data-bs-toggle="modal" data-bs-target="#sizeAdvisorModal">
+              <i class="bi bi-stars"></i> Find My Size (AI Advisor)
+            </button>
+          </div>
+
+          <div class="size-picker-group" id="sizePickerContainer">
+            {% set seen_sizes = [] %}
+            {% for v in product.variants %}
+              {% if v.size not in seen_sizes %}
+                {% set _ = seen_sizes.append(v.size) %}
+                <button type="button" 
+                  class="size-picker-btn {% if loop.first %}active{% endif %}" 
+                  data-size="{{ v.size }}"
+                  onclick="selectSize('{{ v.size }}', this)">
+                  {{ v.size }}
+                </button>
+              {% endif %}
+            {% endfor %}
+          </div>
+
+          <!-- Stock Availability Display -->
+          <div class="small fw-semibold" id="stockStatusText">
+            <i class="bi bi-check-circle-fill text-success me-1"></i> In Stock - Ships within 24 hours
+          </div>
+        </div>
+
+        <!-- Quantity & Add to Cart Row -->
+        <div class="d-flex align-items-center gap-3 mb-4">
+          <div class="qty-control">
+            <button type="button" class="qty-btn" onclick="changeProductQty(-1)" title="Decrease Quantity">-</button>
+            <input type="text" id="productQuantityInput" class="qty-input" value="1" readonly>
+            <button type="button" class="qty-btn" onclick="changeProductQty(1)" title="Increase Quantity">+</button>
+          </div>
+
+          <button type="button" class="btn btn-stitch-primary px-4 py-3 flex-grow-1 fw-bold d-flex align-items-center justify-content-center gap-2" id="btnAddToCart" onclick="addProductToCart()">
+            <i class="bi bi-bag-plus fs-5"></i>
+            <span>Add to Shopping Bag</span>
+          </button>
+
+          <button type="button" class="btn btn-outline-light d-flex align-items-center justify-content-center" style="width: 52px; height: 52px; border-radius: 4px;" onclick="toggleWishlist({{ product.id }}, this)" title="Add to Wishlist">
+            <i class="bi bi-heart fs-5"></i>
+          </button>
+        </div>
+
+        <!-- Perks List -->
+        <div class="p-3 rounded mb-4" style="background: var(--color-surface-low); border: 1px solid var(--color-outline-subtle); border-radius: 4px;">
+          <div class="row g-2 small text-light">
+            <div class="col-6 d-flex align-items-center gap-2">
+              <i class="bi bi-truck text-info fs-6"></i>
+              <span>Free Express Delivery</span>
+            </div>
+            <div class="col-6 d-flex align-items-center gap-2">
+              <i class="bi bi-arrow-repeat text-warning fs-6"></i>
+              <span>30-Day Easy Returns</span>
+            </div>
+            <div class="col-6 d-flex align-items-center gap-2">
+              <i class="bi bi-shield-check text-success fs-6"></i>
+              <span>100% Authentic Guarantee</span>
+            </div>
+            <div class="col-6 d-flex align-items-center gap-2">
+              <i class="bi bi-magic fs-6" style="color: var(--color-ai-accent);"></i>
+              <span>AI Fit Guarantee</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Accordions for Details -->
+        <div class="accordion accordion-flush border-top" id="productAccordion">
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#descCollapse">
+                Product Description & Cut
+              </button>
+            </h2>
+            <div id="descCollapse" class="accordion-collapse collapse show">
+              <div class="accordion-body text-secondary small pt-1">
+                {{ product.description }}
+              </div>
+            </div>
+          </div>
+
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#matCollapse">
+                Material & Care
+              </button>
+            </h2>
+            <div id="matCollapse" class="accordion-collapse collapse">
+              <div class="accordion-body text-secondary small pt-1">
+                <p class="mb-1"><strong>Fabric:</strong> {{ product.material or "Premium Blend" }}</p>
+                <p class="mb-0"><strong>Care:</strong> {{ product.care_instructions or "Dry clean or machine wash cold on delicate cycle" }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Related Products -->
+  {% if related_products %}
+  <section class="py-5 mt-4 border-top">
+    <h3 class="font-serif fw-bold h4 mb-4">Complete the Look</h3>
+    <div class="row g-4">
+      {% for rp in related_products %}
+      <div class="col-lg-3 col-md-6 col-6">
+        <div class="product-card-luxury">
+          <div class="product-thumb-wrap">
+            <a href="/product/{{ rp.slug }}">
+              <img src="{{ rp.image_url }}" class="product-thumb-img" alt="{{ rp.name }}" loading="lazy">
+            </a>
+          </div>
+          <div class="product-card-body">
+            <span class="product-brand-title">{{ rp.brand.name }}</span>
+            <a href="/product/{{ rp.slug }}" class="product-title-link">{{ rp.name }}</a>
+            <div class="product-price-row">
+              <span class="price-current">₹{{ "{:,.0f}".format(rp.current_price) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const variantsData = [
+  {% for v in product.variants %}
+  {
+    id: {{ v.id }},
+    size: "{{ v.size }}",
+    color: "{{ v.color_name }}",
+    hex: "{{ v.color_hex }}",
+    stock: {{ v.stock_quantity }}
+  }{% if not loop.last %},{% endif %}
+  {% endfor %}
+];
+
+let selectedColor = "{{ product.variants[0].color_name }}";
+let selectedSize = "{{ product.variants[0].size }}";
+let currentQuantity = 1;
+
+function swapGalleryImage(url, element) {
+  document.getElementById('mainGalleryImage').src = url;
+  document.querySelectorAll('.thumb-item').forEach(t => t.classList.remove('active'));
+  element.classList.add('active');
+}
+
+function selectColor(colorName, btn) {
+  selectedColor = colorName;
+  document.getElementById('activeColorName').textContent = colorName;
+  document.querySelectorAll('.color-picker-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  updateStockDisplay();
+}
+
+function selectSize(size, btn) {
+  selectedSize = size;
+  document.getElementById('activeSizeName').textContent = size;
+  document.querySelectorAll('.size-picker-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  updateStockDisplay();
+}
+
+function getActiveVariant() {
+  if (!selectedColor || !selectedSize) return null;
+  return variantsData.find(v => v.color.toLowerCase() === selectedColor.toLowerCase() && v.size === selectedSize);
+}
+
+function updateStockDisplay() {
+  const statusEl = document.getElementById('stockStatusText');
+  const btnAdd = document.getElementById('btnAddToCart');
+  const variant = getActiveVariant();
+
+  if (!selectedSize) {
+    statusEl.innerHTML = `<span class="text-muted"><i class="bi bi-info-circle me-1"></i> Please choose a size</span>`;
+    btnAdd.disabled = true;
+    return;
+  }
+
+  if (!variant) {
+    statusEl.innerHTML = `<span class="text-danger"><i class="bi bi-x-circle me-1"></i> Combination unavailable</span>`;
+    btnAdd.disabled = true;
+    return;
+  }
+
+  if (variant.stock <= 0) {
+    statusEl.innerHTML = `<span class="text-danger fw-bold"><i class="bi bi-slash-circle me-1"></i> Out of stock in this size & color</span>`;
+    btnAdd.disabled = true;
+  } else if (variant.stock <= 4) {
+    statusEl.innerHTML = `<span class="text-warning-emphasis fw-bold"><i class="bi bi-clock me-1"></i> Only ${variant.stock} left in stock!</span>`;
+    btnAdd.disabled = false;
+  } else {
+    statusEl.innerHTML = `<span class="text-success"><i class="bi bi-check-circle-fill me-1"></i> In Stock - Ships within 24 hours</span>`;
+    btnAdd.disabled = false;
+  }
+}
+
+function changeProductQty(delta) {
+  const input = document.getElementById('productQuantityInput');
+  let val = parseInt(input.value) + delta;
+  if (val < 1) val = 1;
+  const variant = getActiveVariant();
+  if (variant && val > variant.stock) {
+    val = variant.stock;
+    showToast(`Maximum available quantity is ${variant.stock}`, 'info');
+  }
+  input.value = val;
+  currentQuantity = val;
+}
+
+async function addProductToCart() {
+  const variant = getActiveVariant();
+  if (!variant) {
+    showToast('Please choose both a size and color before adding to cart', 'info');
+    return;
+  }
+  await handleAddToCart(variant.id, currentQuantity);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  updateStockDisplay();
+});
+</script>
+{% endblock %}

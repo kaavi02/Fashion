@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-7 col-lg-5">
+      <div class="card border-0 shadow-lg p-4 p-md-5" style="background: var(--color-surface-low); border: 1px solid var(--color-outline-subtle); border-radius: 8px;">
+        
+        <div class="text-center mb-4">
+          <span class="brand-logo fs-3 mb-2 d-inline-block">VOGUE FIT</span>
+          <h2 class="font-serif fw-bold h4 text-white">Create Your Account</h2>
+          <p class="text-secondary small">Join for customized AI sizing, fast checkout & exclusive perks</p>
+        </div>
+
+        <form id="registerForm">
+          <div class="mb-3">
+            <label class="form-label small fw-semibold text-light">Full Name *</label>
+            <input type="text" class="form-control form-control-lg fs-6" id="regFullName" placeholder="e.g. Mia Taylor" required style="background: #202024; color: #ffffff; border: 1px solid #3d3d45; padding: 0.75rem 1rem;">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-semibold text-light">Email Address *</label>
+            <input type="email" class="form-control form-control-lg fs-6" id="regEmail" placeholder="name@example.com" required style="background: #202024; color: #ffffff; border: 1px solid #3d3d45; padding: 0.75rem 1rem;">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-semibold text-light">Password (minimum 6 characters) *</label>
+            <input type="password" class="form-control form-control-lg fs-6" id="regPassword" placeholder="••••••••" minlength="6" required style="background: #202024; color: #ffffff; border: 1px solid #3d3d45; padding: 0.75rem 1rem;">
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label small fw-semibold text-light">Phone Number</label>
+            <input type="tel" class="form-control form-control-lg fs-6" id="regPhone" placeholder="+91 9876543210" style="background: #202024; color: #ffffff; border: 1px solid #3d3d45; padding: 0.75rem 1rem;">
+          </div>
+
+          <button type="submit" class="btn btn-stitch-primary w-100 py-3 fw-bold mb-4" id="btnRegister" style="font-size: 0.88rem; letter-spacing: 0.12em;">
+            Create Account
+          </button>
+
+          <div class="text-center small text-secondary">
+            Already have an account? <a href="/login" class="text-white fw-bold text-decoration-underline ms-1">Sign In</a>
+          </div>
+        </form>
+
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.getElementById('registerForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('btnRegister');
+  const originalText = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>Creating Account...`;
+
+  try {
+    const res = await apiFetch('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({
+        full_name: document.getElementById('regFullName').value,
+        email: document.getElementById('regEmail').value,
+        password: document.getElementById('regPassword').value,
+        phone: document.getElementById('regPhone').value
+      })
+    });
+
+    setAuth(res.access_token, res.user);
+    showToast('Account created successfully! Welcome to VOGUE FIT.', 'success');
+    setTimeout(() => {
+      window.location.href = '/profile';
+    }, 900);
+  } catch (err) {
+    showToast(err.message, 'danger');
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+  }
+});
+</script>
+{% endblock %}

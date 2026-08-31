@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+      <div class="card border-0 shadow-lg p-4 p-md-5" style="background: var(--color-surface-low); border: 1px solid var(--color-outline-subtle); border-radius: 8px;">
+        
+        <div class="text-center mb-4">
+          <span class="brand-logo fs-3 mb-2 d-inline-block">VOGUE FIT</span>
+          <h2 class="font-serif fw-bold h4 text-white">Welcome Back</h2>
+          <p class="text-secondary small">Sign in to access your saved fits & orders</p>
+        </div>
+
+        <form id="loginForm">
+          <div class="mb-3">
+            <label class="form-label small fw-semibold text-light">Email Address</label>
+            <input type="email" class="form-control form-control-lg fs-6" id="loginEmail" placeholder="name@example.com" required style="background: #202024; color: #ffffff; border: 1px solid #3d3d45; padding: 0.75rem 1rem;">
+          </div>
+
+          <div class="mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <label class="form-label small fw-semibold text-light mb-0">Password</label>
+              <a href="#" class="small text-secondary text-decoration-none" style="font-size: 0.8rem;">Forgot?</a>
+            </div>
+            <input type="password" class="form-control form-control-lg fs-6" id="loginPassword" placeholder="••••••••" required style="background: #202024; color: #ffffff; border: 1px solid #3d3d45; padding: 0.75rem 1rem;">
+          </div>
+
+          <!-- Primary Sign In Button (Large, Prominent, High-Contrast) -->
+          <button type="submit" class="btn btn-stitch-primary w-100 py-3 fw-bold mb-4" id="btnLogin" style="font-size: 0.88rem; letter-spacing: 0.12em;">
+            Sign In
+          </button>
+
+          <!-- 1-Click Quick Demo Login (Stylized Dark Glass Card with Comfortable Sized Buttons) -->
+          <div class="p-3 rounded-3 mb-4 text-center" style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.12);">
+            <span class="d-block small text-light mb-3 fw-semibold" style="letter-spacing: 0.05em;">Instant One-Click Login:</span>
+            <div class="d-flex justify-content-center gap-2">
+              <button type="button" class="btn btn-outline-light px-3 py-2 fw-semibold d-inline-flex align-items-center gap-2" style="font-size: 0.82rem; border-radius: 4px;" onclick="fillCredentials('demo@fashion.com', 'Password123!')">
+                <i class="bi bi-person-check text-info"></i> Demo Customer
+              </button>
+              <button type="button" class="btn btn-outline-secondary px-3 py-2 fw-semibold text-light d-inline-flex align-items-center gap-2" style="font-size: 0.82rem; border-radius: 4px; border-color: rgba(255, 255, 255, 0.25);" onclick="fillCredentials('admin@fashion.com', 'Admin123!')">
+                <i class="bi bi-shield-lock text-warning"></i> Admin
+              </button>
+            </div>
+          </div>
+
+          <div class="text-center small text-secondary">
+            Don't have an account? <a href="/register" class="text-white fw-bold text-decoration-underline ms-1">Create Account</a>
+          </div>
+        </form>
+
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function fillCredentials(email, password) {
+  document.getElementById('loginEmail').value = email;
+  document.getElementById('loginPassword').value = password;
+}
+
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('btnLogin');
+  const originalText = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>Signing In...`;
+
+  try {
+    const res = await apiFetch('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({
+        email: document.getElementById('loginEmail').value,
+        password: document.getElementById('loginPassword').value
+      })
+    });
+
+    setAuth(res.access_token, res.user);
+    showToast(`Welcome back, ${res.user.full_name}!`, 'success');
+    setTimeout(() => {
+      window.location.href = '/';
+    }, 800);
+  } catch (err) {
+    showToast(err.message, 'danger');
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+  }
+});
+</script>
+{% endblock %}

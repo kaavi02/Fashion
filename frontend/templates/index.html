@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-3">
+  
+  <!-- Hero Editorial Section -->
+  <section class="hero-editorial">
+    <img src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=1200&q=80" class="hero-editorial-bg" alt="Editorial Fashion Collection">
+    <div class="hero-editorial-content">
+      <div class="hero-tag">
+        <i class="bi bi-cpu-fill text-warning"></i>
+        <span>AI-Powered Fit Technology</span>
+      </div>
+      <h1 class="display-4 font-serif fw-bold mb-3">Tailored Precision for the Modern Silhouette</h1>
+      <p class="lead opacity-80 mb-4" style="font-size: 1.05rem;">
+        Discover luxury aesthetics designed with pure craft and matched to your exact body biometrics. Say farewell to ill-fitting returns forever.
+      </p>
+      <div class="d-flex flex-wrap gap-3">
+        <a href="/products" class="btn btn-stitch-primary">
+          Explore Collection <i class="bi bi-arrow-right ms-1"></i>
+        </a>
+        <button type="button" class="btn btn-stitch-ghost" data-bs-toggle="modal" data-bs-target="#sizeAdvisorModal">
+          <i class="bi bi-stars me-1" style="color: var(--color-ai-accent);"></i> Find My Fit with AI
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Brand Strip -->
+  <div class="brand-strip-wrap my-4">
+    <div class="text-center text-muted small text-uppercase tracking-wider fw-bold mb-3 label-caps">Featured Luxury & Heritage Brands</div>
+    <div class="d-flex justify-content-center align-items-center flex-wrap gap-5 opacity-75">
+      <span class="fs-5 fw-bold text-white font-serif">ZARA</span>
+      <span class="fs-5 fw-bold text-white" style="font-family: sans-serif; letter-spacing: 0.15em;">URBAN VOGUE</span>
+      <span class="fs-5 fw-bold text-white" style="font-style: italic;">NIKE</span>
+      <span class="fs-5 fw-bold text-white font-serif">AURA LUXE</span>
+      <span class="fs-5 fw-bold text-white" style="font-family: monospace; letter-spacing: 0.1em;">LEVI'S</span>
+      <span class="fs-5 fw-bold text-white">H&M STUDIO</span>
+    </div>
+  </div>
+
+  <!-- Featured Categories -->
+  <section class="py-5">
+    <div class="d-flex justify-content-between align-items-end mb-4">
+      <div>
+        <span class="text-uppercase tracking-wider text-muted small fw-bold">Curated Edits</span>
+        <h2 class="font-serif fw-bold mb-0">Shop by Category</h2>
+      </div>
+      <a href="/products" class="text-dark fw-semibold text-decoration-none small">View All Categories <i class="bi bi-arrow-right"></i></a>
+    </div>
+
+    <div class="row g-4">
+      {% for cat in categories %}
+      <div class="col-lg-{% if loop.index <= 2 %}6{% else %}4{% endif %} col-md-6">
+        <a href="/products?category={{ cat.slug }}" class="cat-card-modern">
+          <img src="{{ cat.image_url }}" alt="{{ cat.name }}" loading="lazy">
+          <div class="cat-card-overlay">
+            <h3 class="font-serif fw-bold h4 mb-1">{{ cat.name }}</h3>
+            <p class="small text-white-50 mb-0 d-none d-sm-block">{{ cat.description }}</p>
+          </div>
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <!-- AI Sizing Promo Banner -->
+  <section class="my-4">
+    <div class="ai-advisor-banner">
+      <div class="d-flex align-items-center gap-3">
+        <div class="rounded-circle bg-white text-dark p-3 d-flex align-items-center justify-content-center" style="width: 52px; height: 52px;">
+          <i class="bi bi-stars text-warning fs-4"></i>
+        </div>
+        <div>
+          <h4 class="font-serif fw-bold mb-1">Tired of Guessing Sizes?</h4>
+          <p class="small opacity-80 mb-0">Our AI algorithm measures 6 biometric indices to predict your true garment fit with 96% accuracy.</p>
+        </div>
+      </div>
+      <button class="btn btn-stitch-primary text-nowrap" data-bs-toggle="modal" data-bs-target="#sizeAdvisorModal">
+        Launch AI Fit Advisor
+      </button>
+    </div>
+  </section>
+
+  <!-- Trending Products Grid -->
+  <section class="py-5">
+    <div class="d-flex justify-content-between align-items-end mb-4">
+      <div>
+        <span class="text-uppercase tracking-wider text-muted small fw-bold">Editor's Choice</span>
+        <h2 class="font-serif fw-bold mb-0">Trending This Season</h2>
+      </div>
+      <a href="/products?sort=popular" class="text-dark fw-semibold text-decoration-none small">Explore All <i class="bi bi-arrow-right"></i></a>
+    </div>
+
+    <div class="row g-4">
+      {% for product in featured_products %}
+      <div class="col-lg-3 col-md-6 col-6">
+        <div class="product-card-luxury">
+          <div class="product-thumb-wrap">
+            <a href="/product/{{ product.slug }}">
+              <img src="{{ product.image_url }}" class="product-thumb-img" alt="{{ product.name }}" loading="lazy">
+            </a>
+            {% if product.discount_percent > 0 %}
+            <span class="badge-discount">-{{ product.discount_percent }}%</span>
+            {% endif %}
+            <button class="btn-wishlist-card" onclick="toggleWishlist({{ product.id }}, this)" title="Save to Wishlist">
+              <i class="bi bi-heart"></i>
+            </button>
+          </div>
+
+          <div class="product-card-body">
+            <span class="product-brand-title">{{ product.brand.name }}</span>
+            <a href="/product/{{ product.slug }}" class="product-title-link" title="{{ product.name }}">{{ product.name }}</a>
+            
+            <div class="product-price-row">
+              <span class="price-current">₹{{ "{:,.0f}".format(product.current_price) }}</span>
+              {% if product.discount_price and product.discount_price < product.base_price %}
+              <span class="price-original">₹{{ "{:,.0f}".format(product.base_price) }}</span>
+              {% endif %}
+            </div>
+
+            <div class="product-swatches">
+              {% for v in product.variants[:3] %}
+              <span class="color-dot" style="background-color: {{ v.color_hex }};" title="{{ v.color_name }}"></span>
+              {% endfor %}
+              <span class="sizes-preview">{{ product.variants|map(attribute='size')|unique|join(', ') }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+</div>
+{% endblock %}

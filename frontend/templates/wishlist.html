@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+  
+  <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+    <div>
+      <h1 class="font-serif fw-bold h2 mb-1">My Saved Wishlist</h1>
+      <span class="text-muted small">Garments and statement pieces saved for later</span>
+    </div>
+    <a href="/products" class="btn btn-sm btn-outline-dark rounded-pill px-3">Explore More</a>
+  </div>
+
+  <div id="wishlistContainer">
+    <div class="text-center py-5">
+      <div class="spinner-border text-dark"></div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  loadWishlist();
+});
+
+async function loadWishlist() {
+  const container = document.getElementById('wishlistContainer');
+  const user = getCurrentUser();
+
+  if (!user) {
+    container.innerHTML = `
+      <div class="card p-5 rounded-3 text-center my-4" style="background: var(--color-surface-low); border: 1px solid var(--color-outline-subtle);">
+        <div class="mb-3 text-secondary" style="font-size: 3rem;"><i class="bi bi-heart"></i></div>
+        <h4 class="fw-bold mb-2 text-white">Sign in to Access Your Wishlist</h4>
+        <p class="text-secondary small mb-4">Keep track of your favorite styles and receive restock alerts across all your devices.</p>
+        <div>
+          <a href="/login" class="btn btn-stitch-primary px-4 py-3 fw-bold">Sign In Now</a>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  try {
+    const items = await apiFetch('/wishlist');
+
+    if (!items || items.length === 0) {
+      container.innerHTML = `
+        <div class="text-center py-5">
+          <div class="mb-3 text-secondary" style="font-size: 3rem;"><i class="bi bi-heartbreak"></i></div>
+          <h4 class="fw-bold text-white">Your wishlist is currently empty</h4>
+          <p class="text-secondary small">Save items you love by tapping the heart icon on any product.</p>
+          <a href="/products" class="btn btn-stitch-primary px-4 py-3 mt-2">Browse Collections</a>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = `
+      <div class="row g-4">
+        ${items.map(p => `
+          <div class="col-lg-3 col-md-4 col-6" id="wishlist_card_${p.id}">
+            <div class="product-card-luxury">
+              <div class="product-thumb-wrap">
+                <a href="/product/${p.slug}">
+                  <img src="${p.image_url}" class="product-thumb-img" alt="${p.name}">
+                </a>
+                <button class="btn-wishlist-card active" onclick="removeFromWishlist(${p.id})" title="Remove">
+                  <i class="bi bi-trash text-danger"></i>
+                </button>
+              </div>
+
+              <div class="product-card-body">
+                <span class="product-brand-title">${p.brand_name}</span>
+                <a href="/product/${p.slug}" class="product-title-link">${p.name}</a>
+                
+                <div class="product-price-row mb-3">
+                  <span class="price-current">₹${p.current_price.toLocaleString()}</span>
+                  ${p.discount_price && p.discount_price < p.base_price ? `<span class="price-original">₹${p.base_price.toLocaleString()}</span>` : ''}
+                </div>
+
+                <div class="mt-auto">
+                  <a href="/product/${p.slug}" class="btn btn-sm btn-dark w-100 rounded-pill py-2 fw-semibold">
+                    View & Add to Bag
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  } catch (err) {
+    container.innerHTML = `<div class="alert alert-danger">${err.message}</div>`;
+  }
+}
+
+async function removeFromWishlist(productId) {
+  try {
+    await apiFetch(`/wishlist/toggle/${productId}`, { method: 'POST' });
+    showToast('Removed from wishlist', 'info');
+    const card = document.getElementById(`wishlist_card_${productId}`);
+    if (card) card.remove();
+    updateWishlistBadge();
+  } catch (err) {
+    showToast(err.message, 'danger');
+  }
+}
+</script>
+{% endblock %}

@@ -6,6 +6,22 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+// Helper to get and set local cart cache
+function getLocalCartCache() {
+  try {
+    const raw = localStorage.getItem('vogue_cart_cache');
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function setLocalCartCache(items) {
+  try {
+    localStorage.setItem('vogue_cart_cache', JSON.stringify(items));
+  } catch (e) {}
+}
+
 async function loadCartPage() {
   const container = document.getElementById('cartItemsList');
   const summaryContainer = document.getElementById('cartSummaryContainer');
@@ -13,9 +29,27 @@ async function loadCartPage() {
 
   try {
     const sid = getSessionId();
-    const data = await apiFetch(`/cart?session_id=${sid}`);
+    let data = await apiFetch(`/cart?session_id=${sid}`);
+
+    // If serverless container recycled and cart is empty, but local cache exists, auto-sync
+    const localCache = getLocalCartCache();
+    if ((!data.items || data.items.length === 0) && localCache.length > 0) {
+      for (const item of localCache) {
+        try {
+          await apiFetch('/cart/add', {
+            method: 'POST',
+            body: JSON.stringify({ variant_id: item.variant_id, quantity: item.quantity, session_id: sid })
+          });
+        } catch (syncErr) {
+          console.warn("Cart auto-sync item skipped:", syncErr);
+        }
+      }
+      // Re-fetch after syncing
+      data = await apiFetch(`/cart?session_id=${sid}`);
+    }
 
     if (!data.items || data.items.length === 0) {
+      setLocalCartCache([]);
       container.innerHTML = `
         <div class="text-center py-5">
           <div class="mb-3 text-muted" style="font-size: 3rem;"><i class="bi bi-bag-x"></i></div>
@@ -27,6 +61,9 @@ async function loadCartPage() {
       if (summaryContainer) summaryContainer.style.display = 'none';
       return;
     }
+
+    // Save active items to local cache for resilience
+    setLocalCartCache(data.items.map(i => ({ variant_id: i.variant_id, quantity: i.quantity })));
 
     if (summaryContainer) summaryContainer.style.display = 'block';
 
@@ -130,6 +167,17 @@ async function handleAddToCart(variantId, quantity = 1) {
       method: 'POST',
       body: JSON.stringify({ variant_id: variantId, quantity, session_id: sid })
     });
+    
+    // Save to local cache
+    const cache = getLocalCartCache();
+    const existing = cache.find(i => i.variant_id === variantId);
+    if (existing) {
+      existing.quantity += quantity;
+    } else {
+      cache.push({ variant_id: variantId, quantity });
+    }
+    setLocalCartCache(cache);
+
     showToast('Added to your shopping bag!', 'success');
     updateCartBadge();
   } catch (err) {

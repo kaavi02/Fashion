@@ -22,7 +22,29 @@ async function initCheckoutPage() {
   // Load Cart Preview
   try {
     const sid = getSessionId();
-    const data = await apiFetch(`/cart?session_id=${sid}`);
+    let data = await apiFetch(`/cart?session_id=${sid}`);
+    
+    // Fallback sync from cache if empty on new container
+    if (!data.items || data.items.length === 0) {
+      let localCache = [];
+      try {
+        const raw = localStorage.getItem('vogue_cart_cache');
+        if (raw) localCache = JSON.parse(raw);
+      } catch (e) {}
+
+      if (localCache.length > 0) {
+        for (const item of localCache) {
+          try {
+            await apiFetch('/cart/add', {
+              method: 'POST',
+              body: JSON.stringify({ variant_id: item.variant_id, quantity: item.quantity, session_id: sid })
+            });
+          } catch (e) {}
+        }
+        data = await apiFetch(`/cart?session_id=${sid}`);
+      }
+    }
+
     if (!data.items || data.items.length === 0) {
       window.location.href = '/cart';
       return;
@@ -65,6 +87,17 @@ async function handleCheckoutSubmit(e) {
   const paymentMethodEl = document.querySelector('input[name="paymentMethod"]:checked');
   const payment_method = paymentMethodEl ? paymentMethodEl.value : 'Credit/Debit Card';
 
+  let itemsPayload = [];
+  try {
+    const raw = localStorage.getItem('vogue_cart_cache');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        itemsPayload = parsed.map(i => ({ variant_id: i.variant_id, quantity: i.quantity }));
+      }
+    }
+  } catch (e) {}
+
   const payload = {
     shipping_name: document.getElementById('checkoutName').value,
     shipping_email: document.getElementById('checkoutEmail').value,
@@ -75,7 +108,8 @@ async function handleCheckoutSubmit(e) {
     shipping_postal_code: document.getElementById('checkoutPostal').value,
     shipping_country: 'India',
     payment_method: payment_method,
-    session_id: getSessionId()
+    session_id: getSessionId(),
+    items: itemsPayload.length > 0 ? itemsPayload : undefined
   };
 
   try {
@@ -83,6 +117,8 @@ async function handleCheckoutSubmit(e) {
       method: 'POST',
       body: JSON.stringify(payload)
     });
+
+    localStorage.removeItem('vogue_cart_cache');
 
     showToast('Order confirmed successfully!', 'success');
     updateCartBadge();

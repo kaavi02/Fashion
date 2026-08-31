@@ -193,6 +193,10 @@ class CartSummary(BaseModel):
     total_count: int
 
 # --- Orders & Checkout ---
+class CheckoutItem(BaseModel):
+    variant_id: int
+    quantity: int = 1
+
 class CheckoutRequest(BaseModel):
     shipping_name: str
     shipping_email: EmailStr
@@ -204,6 +208,7 @@ class CheckoutRequest(BaseModel):
     shipping_country: str = "India"
     payment_method: str = "Credit/Debit Card"
     session_id: Optional[str] = None
+    items: Optional[List[CheckoutItem]] = None
 
 class OrderItemOut(BaseModel):
     id: int

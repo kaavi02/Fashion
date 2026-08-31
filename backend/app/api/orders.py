@@ -37,6 +37,18 @@ def process_checkout(
     else:
         cart_items = []
 
+    # If serverless ephemeral SQLite container lost cart rows, fallback to items in payload
+    if not cart_items and checkout_in.items:
+        for itm in checkout_in.items:
+            var = db.query(ProductVariant).filter(ProductVariant.id == itm.variant_id).first()
+            if var:
+                cart_items.append(CartItem(
+                    user_id=current_user.id if current_user else None,
+                    session_id=checkout_in.session_id if not current_user else None,
+                    variant_id=var.id,
+                    quantity=itm.quantity
+                ))
+
     if not cart_items:
         raise HTTPException(status_code=400, detail="Your shopping cart is empty")
 
@@ -45,7 +57,9 @@ def process_checkout(
 
     # Validate stock and calculate total
     for item in cart_items:
-        variant = item.variant
+        variant = item.variant if hasattr(item, 'variant') and item.variant else db.query(ProductVariant).filter(ProductVariant.id == item.variant_id).first()
+        if not variant:
+            continue
         product = variant.product
 
         if variant.stock_quantity < item.quantity:
@@ -119,7 +133,8 @@ def process_checkout(
 
     # Empty the cart
     for item in cart_items:
-        db.delete(item)
+        if getattr(item, 'id', None):
+            db.delete(item)
 
     db.commit()
     db.refresh(order)

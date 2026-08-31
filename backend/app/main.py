@@ -63,6 +63,12 @@ app.include_router(orders.router, prefix=settings.API_V1_STR)
 app.include_router(wishlist.router, prefix=settings.API_V1_STR)
 app.include_router(size_advisor.router, prefix=settings.API_V1_STR)
 
+@app.get("/favicon.ico", include_in_schema=False)
+def favicon():
+    """Handles browser favicon requests cleanly."""
+    from fastapi import Response
+    return Response(status_code=204)
+
 @app.get("/api/health", tags=["Health"])
 def health_check():
     """Health check endpoint indicating active database engine status."""

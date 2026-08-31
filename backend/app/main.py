@@ -35,7 +35,8 @@ app = FastAPI(
     title=settings.PROJECT_NAME,
     description="Modern Fashion E-Commerce Store with AI Size Advisor, Full Catalog, and Cart",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
+    redirect_slashes=False
 )
 
 # CORS

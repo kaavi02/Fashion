@@ -69,7 +69,7 @@
         <!-- Color Selector -->
         <div class="mb-4">
           <div class="selector-label">
-            <span>Selected Color: <strong id="activeColorName">{{ product.variants[0].color_name }}</strong></span>
+            <span>Selected Color: <strong id="activeColorName">{{ product.variants[0].color_name if product.variants else 'Standard' }}</strong></span>
           </div>
           <div class="color-picker-group">
             {% set seen_colors = [] %}
@@ -91,10 +91,8 @@
 
         <!-- Size Selector & AI Trigger -->
         <div class="mb-4">
-        <!-- Size Selector & AI Trigger -->
-        <div class="mb-4">
           <div class="selector-label">
-            <span>Selected Size: <strong id="activeSizeName">{{ product.variants[0].size }}</strong></span>
+            <span>Selected Size: <strong id="activeSizeName">{{ product.variants[0].size if product.variants else 'Standard' }}</strong></span>
             <button type="button" class="btn btn-link fw-bold p-0 text-decoration-none d-inline-flex align-items-center gap-1" style="color: var(--color-ai-accent);" data-bs-toggle="modal" data-bs-target="#sizeAdvisorModal">
               <i class="bi bi-stars"></i> Find My Size (AI Advisor)
             </button>
@@ -239,8 +237,8 @@ const variantsData = [
   {% endfor %}
 ];
 
-let selectedColor = "{{ product.variants[0].color_name }}";
-let selectedSize = "{{ product.variants[0].size }}";
+let selectedColor = "{{ product.variants[0].color_name if product.variants else '' }}";
+let selectedSize = "{{ product.variants[0].size if product.variants else '' }}";
 let currentQuantity = 1;
 
 function swapGalleryImage(url, element) {
